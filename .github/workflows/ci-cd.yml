@@ -7,10 +7,9 @@ on:
     branches: [ development ]
 
 jobs:
-  sonar-quality-gate:
-    name: SonarQube Security Gate
-    runs-on: self-hosted   # REQUIRED for localhost access
-
+  sonar-security:
+    name: SonarQube Security Check
+    runs-on: self-hosted  
 
     steps:
       - name: Checkout code
