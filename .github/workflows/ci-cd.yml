@@ -1,0 +1,36 @@
+name: Angular CI/CD Pipeline for SonarQube Analysis
+on:
+  push:
+    branches:
+      - [development]
+  pull_request:
+    branches:
+      - [development]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2 
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm install
+      - name: Run SonarQube Scan
+        uses: sonarsource/sonarcloud-github-action@master
+        with:
+          args: >
+            -Dsonar.projectKey=angular-scan
+            -Dsonar.host.url=http://localhost:9001
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+      - name: Build the project
+        run: npm run build -- --prod 
+      - name: Run tests
+        run: npm run test -- --watch=false --code-coverage
+      - name: Deploy to Server
+        if: github.ref == 'refs/heads/development' && github.event_name == 'push'
+        run: |
+          echo "Deploying to server..."
+          # Add your deployment commands here 
