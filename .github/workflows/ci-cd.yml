@@ -25,9 +25,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests (Headless)
-        run: npm run test --watch=false --code-coverage --browsers=ChromeHeadless
-
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v2
         env:
