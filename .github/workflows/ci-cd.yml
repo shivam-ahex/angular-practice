@@ -1,36 +1,67 @@
-name: Angular CI/CD Pipeline for SonarQube Analysis
+name: Angular CI/CD Pipeline with SonarQube Gate
+
 on:
-  push:
-    branches:
-      - development
   pull_request:
-    branches:
-      - development
+    branches: [ development ]
+  push:
+    branches: [ development ]
+
 jobs:
-  build:
+  sonar-security:
+    name: SonarQube Security Check
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
+        uses: actions/checkout@v4
         with:
-          node-version: '18'
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
       - name: Install dependencies
-        run: npm install
-      - name: Run SonarQube Scan
-        uses: sonarsource/sonarcloud-github-action@master
-        with:
-          args: >
-            -Dsonar.projectKey=angular-scan
-            -Dsonar.host.url=http://localhost:9001
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-      - name: Build the project
-        run: npm run build -- --prod 
-      - name: Run tests
+        run: npm ci
+
+      - name: Run tests with coverage
         run: npm run test -- --watch=false --code-coverage
-      - name: Deploy to Server
-        if: github.ref == 'refs/heads/development' && github.event_name == 'push'
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v2
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: SonarQube Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  build-and-deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    needs: sonar-security
+    if: success() && github.ref == 'refs/heads/development'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Angular
+        run: npm run build -- --configuration=production
+
+      - name: Deploy
         run: |
           echo "Deploying to server..."
-          # Add your deployment commands here 
+          # rsync / scp / docker deploy commands
