@@ -7,9 +7,10 @@ on:
     branches: [ development ]
 
 jobs:
-  sonar-security:
-    name: SonarQube Security Check
-    runs-on: ubuntu-latest
+  sonar-quality-gate:
+    name: SonarQube Security Gate
+    runs-on: self-hosted   # REQUIRED for localhost access
+
 
     steps:
       - name: Checkout code
